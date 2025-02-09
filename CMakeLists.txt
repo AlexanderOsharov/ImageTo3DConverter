@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.15)
-
 project(ImageTo3DConverter LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -27,12 +26,17 @@ file(GLOB HEADERS "include/*.h")
 
 add_library(ImageTo3DConverter STATIC ${SOURCES} ${HEADERS})
 
-target_include_directories(ImageTo3DConverter PUBLIC 
+# Подключение заголовочных файлов
+target_include_directories(ImageTo3DConverter PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
-    ${CMAKE_BINARY_DIR}/MeshProcessingLibrary/include
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/MeshProcessingLibrary/include>
+    $<INSTALL_INTERFACE:include/MeshProcessingLibrary>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/MeshProcessingLibrary/include/third_party>
+    $<INSTALL_INTERFACE:include/MeshProcessingLibrary/third_party>
 )
 
+# Связывание с MeshProcessingLibrary
 target_link_libraries(ImageTo3DConverter PRIVATE MeshProcessingLibrary)
 
 # Установка библиотеки
