@@ -1,15 +1,15 @@
-#ifndef IMAGETO3DCONVERTER_CAPI_H
-#define IMAGETO3DCONVERTER_CAPI_H
+#ifndef IMAGE_TO_3D_CONVERTER_CAPI_H
+#define IMAGE_TO_3D_CONVERTER_CAPI_H
 
-#ifdef __cplusplus
-extern "C" {
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#define EMSCRIPTEN_KEEPALIVE __attribute__((used))
+#else
+#define EMSCRIPTEN_KEEPALIVE
 #endif
 
-// Функция для конвертации изображения в 3D-объект
-void convert_image_to_3d(const char* input_filename, const char* output_filename, const char* output_format);
+extern "C" EMSCRIPTEN_KEEPALIVE void exportToOBJ(const char* filename);
+extern "C" EMSCRIPTEN_KEEPALIVE void exportToSTL(const char* filename);
+extern "C" EMSCRIPTEN_KEEPALIVE void exportToPLY(const char* filename);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif // IMAGETO3DCONVERTER_CAPI_H
+#endif // IMAGE_TO_3D_CONVERTER_CAPI_H

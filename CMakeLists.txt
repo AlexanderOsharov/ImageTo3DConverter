@@ -1,59 +1,48 @@
-cmake_minimum_required(VERSION 3.10)
-project(ImageTo3DConverter)
+cmake_minimum_required(VERSION 3.15)
+
+project(ImageTo3DConverter LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Подключение HeightMapGenerator и MeshProcessingLibrary
-include(FetchContent)
-FetchContent_Declare(
-    HeightMapGenerator
-    GIT_REPOSITORY https://github.com/AlexanderOsharov/HeightMapGenerator.git
-    GIT_TAG main
-)
-FetchContent_MakeAvailable(HeightMapGenerator)
+# Добавляем зависимости
+find_package(Git REQUIRED)
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/MeshProcessingLibrary")
+    message(STATUS "Cloning MeshProcessingLibrary...")
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} clone https://github.com/AlexanderOsharov/MeshProcessingLibrary.git ${CMAKE_BINARY_DIR}/MeshProcessingLibrary
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        RESULT_VARIABLE GIT_CLONE_RESULT
+    )
+    if(NOT GIT_CLONE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to clone MeshProcessingLibrary")
+    endif()
+endif()
 
-FetchContent_Declare(
-    MeshProcessingLibrary
-    GIT_REPOSITORY https://github.com/AlexanderOsharov/MeshProcessingLibrary.git
-    GIT_TAG main
-)
-FetchContent_MakeAvailable(MeshProcessingLibrary)
+add_subdirectory(${CMAKE_BINARY_DIR}/MeshProcessingLibrary ${CMAKE_BINARY_DIR}/MeshProcessingLibrary-build)
 
-# Создание библиотеки
-add_library(ImageTo3DConverter STATIC
-    src/ImageTo3DConverter.cpp
-)
+# Добавляем свои исходные файлы
+file(GLOB SOURCES "src/*.cpp")
+file(GLOB HEADERS "include/*.h")
 
-# Подключение заголовочных файлов
-target_include_directories(ImageTo3DConverter PUBLIC include)
-target_include_directories(ImageTo3DConverter PRIVATE 
-    ${HeightMapGenerator_SOURCE_DIR}/include
-    ${MeshProcessingLibrary_SOURCE_DIR}/include
-)
+add_library(ImageTo3DConverter STATIC ${SOURCES} ${HEADERS})
 
-# Связывание с зависимостями
-target_link_libraries(ImageTo3DConverter PRIVATE HeightMapGenerator MeshProcessingLibrary)
-
-# Тестирование
-add_executable(ImageTo3DConverterTest tests/main.cpp)
-target_link_libraries(ImageTo3DConverterTest PRIVATE ImageTo3DConverter)
-
-
-
-# Добавление C-интерфейса
-add_library(ImageTo3DConverter_CAPI STATIC src/ImageTo3DConverter_CAPI.cpp)
-
-# Подключение заголовочных файлов
-target_include_directories(ImageTo3DConverter_CAPI PUBLIC include)
-target_include_directories(ImageTo3DConverter_CAPI PRIVATE 
-    ${HeightMapGenerator_SOURCE_DIR}/include
-    ${MeshProcessingLibrary_SOURCE_DIR}/include
+target_include_directories(ImageTo3DConverter PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    ${CMAKE_BINARY_DIR}/MeshProcessingLibrary/include
 )
 
-# Связывание с зависимостями
-target_link_libraries(ImageTo3DConverter_CAPI PRIVATE HeightMapGenerator MeshProcessingLibrary)
+target_link_libraries(ImageTo3DConverter PRIVATE MeshProcessingLibrary)
 
-# Создание библиотеки
-add_library(ImageTo3DConverter_SHARED SHARED $<TARGET_OBJECTS:ImageTo3DConverter_CAPI>)
-set_target_properties(ImageTo3DConverter_SHARED PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# Установка библиотеки
+install(TARGETS ImageTo3DConverter
+    EXPORT ImageTo3DConverterTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
+
+install(DIRECTORY include/ DESTINATION include)
+install(EXPORT ImageTo3DConverterTargets DESTINATION cmake)
